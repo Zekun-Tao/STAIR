@@ -1,3 +1,4 @@
 # STAIR
-This repository contains material related to the paper
+This repository contains material related to the paper   
+
 Coming soon ...
