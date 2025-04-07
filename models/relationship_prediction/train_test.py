@@ -12,12 +12,9 @@ def train(model, predictor, criterion, data, A1, A2, train_edge, train_label, op
     total_loss = total_examples = 0
     count = 0
 
-    # 处理数据
-    # train_edge = data.edge_index.to(data.x.device)
     train_edge = train_edge.to(data.x.device)
     train_label = train_label.to(data.x.device)
 
-    # 模型
     for perm, perm_large in zip(DataLoader(range(train_edge.size(1)), args.batch_size, shuffle=True),
                                 DataLoader(range(train_edge.size(1)), args.gnn_batch_size, shuffle=True)):
         optimizer.zero_grad()
