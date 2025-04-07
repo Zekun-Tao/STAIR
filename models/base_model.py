@@ -19,21 +19,7 @@ def mask_node_features(x, mask_ratio=0.1):
 
 
 def adjust_edge_weights_by_similarity(x, row_indices, col_indices, sim_metrics, edge_attr=None):
-    if edge_attr is None:
-        edge_attr = torch.ones((len(row_indices),), dtype=torch.float)
-    edge_features_src = x[row_indices]
-    edge_features_dst = x[col_indices]
-
-    if sim_metrics == 'cos':
-        similarities = torch.cosine_similarity(edge_features_src, edge_features_dst, dim=1)
-    elif sim_metrics == 'rev_cos':
-        similarities = torch.cosine_similarity(edge_features_src, edge_features_dst, dim=1)
-        similarities = 1 - similarities
-    else:
-        pdist = nn.PairwiseDistance(p=2)
-        similarities = pdist(edge_features_src, edge_features_dst)
-    edge_attr = similarities
-    return edge_attr
+    pass
 
 
 class Attention(nn.Module):
@@ -117,30 +103,8 @@ class Dual_GCN(nn.Module):
             conv.reset_parameters()
 
     def forward(self, x, adj_t):
-        # channel 1
-        for conv in self.convs[:-1]:
-            row_indices, col_indices, values = adj_t.coo()
-            edge_attr = adjust_edge_weights_by_similarity(x, row_indices, col_indices, 'cos', values)
-            x1 = conv(x, adj_t, edge_attr).relu()
-            x1 = F.dropout(x1, p=self.dropout, training=self.training)
-        row_indices, col_indices, values = adj_t.coo()
-        edge_attr = adjust_edge_weights_by_similarity(x1, row_indices, col_indices, 'cos', edge_attr)
-        x1 = self.convs[-1](x1, adj_t, edge_attr)
-
-        # channel 2
-        for conv in self.convs[:-1]:
-            row_indices, col_indices, values = adj_t.coo()
-            edge_attr = adjust_edge_weights_by_similarity(x, row_indices, col_indices, 'eud', values)
-            x2 = conv(x, adj_t, edge_attr).relu()
-            x2 = F.dropout(x2, p=self.dropout, training=self.training)
-        row_indices, col_indices, values = adj_t.coo()
-        edge_attr = adjust_edge_weights_by_similarity(x2, row_indices, col_indices, 'eud', edge_attr)
-        x2 = self.convs[-1](x2, adj_t, edge_attr)
-
-        emb = torch.stack([x1, x2], dim=1)
-        emb, attention = self.attention(emb)
-
-        return emb
+        pass
+        
 
 
 class GraphSAGE(nn.Module):
@@ -185,31 +149,8 @@ class Dual_GraphSAGE(nn.Module):
 
     def forward(self, x, adj_t):
         # channel 1
-        for conv in self.convs[:-1]:
-            row_indices, col_indices, values = adj_t.coo()
-            edge_attr = adjust_edge_weights_by_similarity(x, row_indices, col_indices, 'cos', values)
-            x1 = conv(x, adj_t, edge_attr).relu()
-            x1 = F.dropout(x1, p=self.dropout, training=self.training)
-            x3 = x1
-        row_indices, col_indices, values = adj_t.coo()
-        edge_attr = adjust_edge_weights_by_similarity(x1, row_indices, col_indices, 'cos', edge_attr)
-        x1 = self.convs[-1](x1, adj_t, edge_attr)
+        pass
 
-        # channel 2
-        for conv in self.convs[:-1]:
-            row_indices, col_indices, values = adj_t.coo()
-            edge_attr = adjust_edge_weights_by_similarity(x, row_indices, col_indices, 'eud', values)
-            x2 = conv(x, adj_t, edge_attr).relu()
-            x2 = F.dropout(x2, p=self.dropout, training=self.training)
-            x4 = x2
-        row_indices, col_indices, values = adj_t.coo()
-        edge_attr = adjust_edge_weights_by_similarity(x2, row_indices, col_indices, 'eud', edge_attr)
-        x2 = self.convs[-1](x2, adj_t, edge_attr)
-
-        emb = torch.stack([x1, x2, x3, x4], dim=1)
-        emb, attention = self.attention(emb)
-
-        return emb, x3, x4
 
 
 class GAT(nn.Module):
@@ -283,17 +224,4 @@ class MLPPredictor2(nn.Module):
             conv.reset_parameters()
 
     def forward(self, x_i, x_j=None):
-        if x_j is None:
-            x = x_i
-        else:
-            x_dif = x_i - x_j
-            x_dot = x_i * x_j
-
-            x1 = torch.stack([x_dot, x_dif], dim=1)
-            x, atten = self.attention(x1)
-
-        for lin in self.lins[:-1]:
-            x = lin(x).relu()
-            x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.lins[-1](x)
-        return torch.sigmoid(x)
+        pass
