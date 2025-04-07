@@ -116,7 +116,6 @@ def test(model, predictor, x, test_edge_index, batch_size, A, data):
     labels = torch.cat((torch.ones(pos_test_pred.shape[0]), torch.zeros(neg_test_pred.shape[0])), dim=0)
     pred = torch.cat((pos_test_pred, neg_test_pred), dim=0)
     pred_edges_index = torch.cat((pos_edge, neg_edge), dim=1)
-    # 保存结果
     auc = roc_auc_score(labels, pred)
 
     precision, recall, thresholds = precision_recall_curve(labels, pred)
