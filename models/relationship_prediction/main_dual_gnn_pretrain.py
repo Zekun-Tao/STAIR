@@ -40,12 +40,10 @@ def train(model, predictor, criterion, emb, adj_t, train_edge, train_label, opti
     model.train()
     predictor.train()
 
-    # 处理数据
     train_edge = train_edge.to(emb.device)
     train_label = train_label.to(emb.device)
     total_loss = num_examples = 0
 
-    # 模型
     for perm in DataLoader(range(train_edge.size(1)), batch_size, shuffle=True):
         optimizer.zero_grad()
         edge_index = train_edge[:, perm].to(emb.device)
@@ -69,7 +67,6 @@ def train(model, predictor, criterion, emb, adj_t, train_edge, train_label, opti
 
         optimizer.step()
 
-        # 计算loss
         total_loss += loss.item() * batch_size
         num_examples += batch_size
 
@@ -81,7 +78,6 @@ def test(model, predictor, emb, adj_t, test_edge, test_label, batch_size):
     model.eval()
     predictor.eval()
 
-    # test数据集结果
     test_edge = test_edge.to(emb.device)
     test_label = test_label.to(emb.device)
 
@@ -100,7 +96,6 @@ def test(model, predictor, emb, adj_t, test_edge, test_label, batch_size):
     pred_edge = torch.cat(pred_edges, dim=1)
     labels = torch.cat(labels).cpu()
 
-    # test accuracy
     auc = roc_auc_score(labels, logits)
     optimal_threshold = 0.95
     y_pred = torch.where(logits >= optimal_threshold, 1, 0)
@@ -115,7 +110,6 @@ def test(model, predictor, emb, adj_t, test_edge, test_label, batch_size):
             'pred_labels':y_pred, 'pred_logits': pred}
 
 
-# 命令行参数
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Base-Graph Neural Network')
     parser.add_argument('--input_dim', type=int, default=40, help='Input layer dimension')
@@ -153,12 +147,10 @@ def main():
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     for run in range(args.run):
-        # 存储和打印结果
         best_performance = {'auc': .0, 'accuracy': .0, 'precision': .0, 'recall': .0, 'pos_label_f1': .0, 'f1': .0}
         print('#################################          ', run, '          #################################')
         logger.info('############################' + str(run) + '#################################')
 
-        # 从保存的文件夹里面随机划分训练集和测试集，并获取对应的边
         data_dict = torch.load(f'/best_performance_neo_link_{str(run)}{suffix}.pth')
         edge_index, train_edge_index, train_edge_rel = data_dict['edge_index'], data_dict['train_edge'], data_dict[
             'train_rel']
@@ -166,7 +158,6 @@ def main():
         num_node = data_dict['num_node']
         edge_index = torch.cat((train_edge_index, test_edge_index_rmDup), dim=1)
 
-        # 数据集生成
         data = Data(edge_index=edge_index, num_nodes=num_node)
         data.adj_t = torch_sparse.SparseTensor(row=edge_index[1], col=edge_index[0], sparse_sizes=(num_node, num_node))
         data.adj_t = data.adj_t.to(device)
@@ -174,7 +165,6 @@ def main():
         data.x = node_features
         data.x = data.x.to(device)
 
-        # 构造模型
         if args.gnn_name == 'GCN':
             model = GCN(args.input_dim, args.hidden_dim, args.hidden_dim, args.num_layers, args.dropout_rate).to(device)
         elif args.gnn_name == 'GAT':
@@ -195,12 +185,7 @@ def main():
                                  dropout=args.dropout_rate).to(device)
         criterion = torch.nn.BCELoss().to(device)
         optimizer = torch.optim.Adam(list(model.parameters()) + list(predictor.parameters()), lr=args.lr)
-        # 初始化
-        # model.reset_parameters()
-        # predictor.reset_parameters()
-        # torch.nn.init.xavier_uniform_(emb.weight)
 
-        # 训练
         for epoch in range(1, args.epochs + 1):
             loss = train(model, predictor, criterion, data.x, data.adj_t, train_edge_index, train_edge_rel, optimizer,
                          args.batch_size)
