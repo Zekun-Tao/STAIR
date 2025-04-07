@@ -72,32 +72,26 @@ def main():
 
     table_header, table_data = ['auc', 'accuracy', 'precision', 'recall', 'f1'], []
     for run in range(args.runs):
-        # 打印的内容
         best_performance = {'auc': .0, 'accuracy': .0, 'precision': .0, 'recall': .0, 'f1': .0}
         logger.info('############################' + str(run) + '#################################')
 
-        # 从保存的文件夹里面随机划分训练集和测试集，并获取对应的边
         train_edge_index_allpath, test_edge_index_allpath, num_node = construct_graph(folder_path)
         test_edge_index_rmDup = duplicated_col(test_edge_index_allpath, train_edge_index_allpath)
 
-        # 保留其中有关系的边
         edge_index = torch.cat((train_edge_index_allpath, test_edge_index_rmDup), dim=1)
         train_edge_index, train_edge_rel = construct_rel(train_edge_index_allpath, folder_path)
         test_edge_index_rmDup, test_edge_index_rmDup_rel = construct_rel(test_edge_index_rmDup, folder_path)
 
-        # 用训练集的数据构图
         data = Data(edge_index=train_edge_index_allpath, num_nodes=num_node)
         data.adj_t = torch_sparse.SparseTensor.from_edge_index(data.edge_index)
         data.adj_t = data.adj_t.to(device)
         data.x = construct_node_feature(folder_path)
         data.x = data.x.to(device)
 
-        # 构建邻接矩阵
         edge_weight = torch.ones(data.edge_index.size(1), dtype=float)
         A = ssp.csr_matrix((edge_weight, (data.edge_index[0], data.edge_index[1])),
                            shape=(data.num_nodes, data.num_nodes))
 
-        # 模型
         model = HlModual(args.input_channels, args.hidden_channels,
                          args.hidden_channels, args.num_layers,
                          args.dropout, args=args).to(device)
@@ -105,7 +99,6 @@ def main():
         predictor = MLPPredictor(args.hidden_channels, args.hidden_channels, 1,
                                  args.mlp_num_layers, args.dropout).to(device)
 
-        # 初始化
         model.reset_parameters()
         predictor.reset_parameters()
         optimizer = torch.optim.Adam(list(model.parameters()) + list(predictor.parameters()),
