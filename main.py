@@ -29,7 +29,6 @@ def echo(result, logger, epoch=0, loss=0, best=False):
     logger.info(content)
 
 
-# 命令行参数
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Parameters-Graph Neural Network')
     parser.add_argument('--input_dim', type=int, default=40, help='Input layer dimension')
@@ -74,23 +73,19 @@ def main():
         print('#################################          ', run, '          #################################')
         logger.info('############################' + str(run) + '#################################')
 
-        # 从保存的文件夹里面随机划分训练集和测试集，并获取对应的边
         train_edge_index_allpath, test_edge_index_allpath, num_node = construct_graph(folder_path)
         test_edge_index_rmDup = duplicated_col(test_edge_index_allpath, train_edge_index_allpath)
 
-        # 保留其中有关系的边
         edge_index = torch.cat((train_edge_index_allpath, test_edge_index_rmDup), dim=1)
         train_edge_index, train_edge_rel = construct_rel(train_edge_index_allpath, folder_path)
         test_edge_index_rmDup, test_edge_index_rmDup_rel = construct_rel(test_edge_index_rmDup, folder_path)
 
-        # 数据集生成
         data = Data(edge_index=edge_index, num_nodes=num_node)
         data.adj_t = torch_sparse.SparseTensor(row=edge_index[1], col=edge_index[0], sparse_sizes=(num_node, num_node))
         data.adj_t = data.adj_t.to(device)
         data.x = construct_node_feature(folder_path)
         args.num_node = num_node
 
-        # 确定结构属性
         edge_weight_eud = adjust_edge_weights_by_similarity(data.x, data.edge_index[0], data.edge_index[1], 'cos')
         edge_weight_sim = adjust_edge_weights_by_similarity(data.x, data.edge_index[0], data.edge_index[1], 'eud')
 
@@ -99,7 +94,6 @@ def main():
         A2 = ssp.csr_matrix((edge_weight_sim + 1e-15, (data.edge_index[0], data.edge_index[1])),
                            shape=(data.num_nodes, data.num_nodes))
 
-        # 构造模型
         data.x = data.x.to(device)
         model = RIModual(args.input_dim, args.hidden_dim, args.hidden_dim, args.num_layers, args.dropout_rate,
                          args=args).to(device)
@@ -109,17 +103,14 @@ def main():
         criterion = torch.nn.BCELoss().to(device)
         optimizer = torch.optim.Adam(list(model.parameters()) +
                                      list(predictor.parameters()), lr=args.lr)
-        # 初始化
         model.reset_parameters()
         predictor.reset_parameters()
 
-        # 加载预训练模型
         pretrain_model = f'datasets/data_augmentation/pretrain_model/Dual_GraphSage_model_{run}{suffix}.pt'
         model.load_state_dict(torch.load(pretrain_model), strict=False)
         pretrain_predictor = f'datasets/data_augmentation/pretrain_model/Dual_GraphSage_predictor_{run}{suffix}.pt'
         predictor.load_state_dict(torch.load(pretrain_predictor))
 
-        # 训练
         for epoch in range(1, args.epochs + 1):
             loss = train(model, predictor, criterion, data, A1, A2, train_edge_index, train_edge_rel, optimizer, args)
             result = test(model, predictor, data, A1, A2, test_edge_index_rmDup, test_edge_index_rmDup_rel, args.test_batch_size)
