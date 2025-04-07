@@ -98,7 +98,7 @@ class Dual_GCN(nn.Module):
 
         self.dropout = dropout
 
-    def reset_parameters(self):  # 4. Reset the parameters
+    def reset_parameters(self):  
         for conv in self.convs:
             conv.reset_parameters()
 
@@ -118,7 +118,7 @@ class GraphSAGE(nn.Module):
             self.convs.append(SAGEConv(hidden_channels, hidden_channels))
         self.convs.append(SAGEConv(hidden_channels, out_channels))
 
-    def reset_parameters(self):  # 4. Reset the parameters
+    def reset_parameters(self):  
         for conv in self.convs:
             conv.reset_parameters()
 
@@ -143,7 +143,7 @@ class Dual_GraphSAGE(nn.Module):
         self.convs.append(SAGEConv(hidden_channels, out_channels))
         self.attention = Attention(hidden_channels)
 
-    def reset_parameters(self):  # 4. Reset the parameters
+    def reset_parameters(self):
         for conv in self.convs:
             conv.reset_parameters()
 
@@ -166,7 +166,7 @@ class GAT(nn.Module):
             self.convs.append(GATConv(hidden_channels, hidden_channels))
         self.convs.append(GATConv(hidden_channels, out_channels))
 
-    def reset_parameters(self):  # 4. Reset the parameters
+    def reset_parameters(self):  
         for conv in self.convs:
             conv.reset_parameters()
 
